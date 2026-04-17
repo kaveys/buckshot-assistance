@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>恶魔轮盘 - 弹药统计器</title>
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.js"></script>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border: 1px solid #444;
+        }
+        h1 {
+            text-align: center;
+            color: #ff6b6b;
+            text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+            font-size: 28px;
+            margin-bottom: 30px;
+        }
+        h3 {
+            color: #ff8e8e;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .flex {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .flex-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .label {
+            width: 120px;
+            font-weight: bold;
+            color: #b0b0b0;
+        }
+        input[type="number"] {
+            width: 100px;
+            padding: 8px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #3a3a3a;
+            color: #e0e0e0;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #ff6b6b;
+            box-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+        }
+        .button {
+            padding: 10px 20px;
+            border-radius: 4px;
+            background-color: #3a3a3a;
+            color: #ff6b6b;
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid #555;
+        }
+        .button:hover {
+            background-color: #4a4a4a;
+            border-color: #ff6b6b;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+        }
+        .button:disabled {
+            background-color: #333;
+            color: #666;
+            cursor: not-allowed;
+            border-color: #444;
+        }
+        /* 实弹，空弹样式 */
+        .red::before,
+        .gray::before {
+            content: "";
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .red::before {
+            background-color: #ff3d3d;
+            box-shadow: 0 0 10px rgba(255, 61, 61, 0.6);
+        }
+        .gray::before {
+            background-color: #888;
+        }
+        /* 子弹 */
+        .bullet {
+            min-width: 100px;
+            padding: 12px;
+            border: 1px dashed #555;
+            border-radius: 6px;
+            text-align: center;
+            background-color: #333;
+            transition: all 0.3s;
+        }
+        .bullet:hover {
+            border-color: #ff6b6b;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+        }
+        .bullet.active {
+            border: 2px solid #ff6b6b;
+            background-color: #3a3a3a;
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.4);
+        }
+        .shotbtn {
+            border: 2px solid #555;
+            border-radius: 10px;
+            padding: 12px 20px;
+            cursor: pointer;
+            box-shadow: inset 0px 0px 15px 0px rgba(0,0,0,0.5);
+            transition: all 0.5s;
+            margin-right: 15px;
+            background-color: #333;
+        }
+        .shotbtn:hover {
+            border-color: #ff6b6b;
+            box-shadow: inset 0px 0px 15px 0px rgba(255, 107, 107, 0.3);
+        }
+        .stats {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            border: 1px solid #444;
+        }
+        .shot-history {
+            margin-top: 30px;
+            background-color: #333;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #444;
+        }
+        .history-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #444;
+            transition: background-color 0.3s;
+        }
+        .history-item:hover {
+            background-color: #3a3a3a;
+        }
+        .history-number {
+            width: 40px;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+        select {
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #3a3a3a;
+            color: #e0e0e0;
+        }
+        select:focus-visible {
+            outline: 0;
+            border-color: #ff6b6b;
+            box-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+            color: #888;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #ff6b6b;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" id="app">
+        <h1>恶魔轮盘 - 弹药统计器</h1>
+        
+
+        
+        <!-- 子弹设置 -->
+        <div class="stats">
+            <h3>子弹设置</h3>
+            <div class="flex" style="align-items: center;">
+                <div class="label" style="width: 80px;">实弹数量：</div>
+                <input type="number" min="0" v-model.number="redNum" style="width: 60px;">
+                <div class="label" style="width: 80px;">空包弹数量：</div>
+                <input type="number" min="0" v-model.number="grayNum" style="width: 60px;">
+            </div>
+            <div style="margin-top: 10px;">
+                <div class="button" @click="setBullets">重置子弹</div>
+            </div>
+        </div>
+        
+        <!-- 统计信息 -->
+        <div class="stats">
+            <h3>统计信息</h3>
+            <div class="flex">
+                <div class="label">总子弹数：</div>
+                <div>{{allNum}}</div>
+                <div class="label">已发射：</div>
+                <div>{{shootedBulletNum}}</div>
+                <div class="label">剩余：</div>
+                <div>{{allNum - shootedBulletNum}}</div>
+            </div>
+            <div class="flex">
+                <div class="label">剩余实弹：</div>
+                <div>{{redNum - shootedRed}}</div>
+                <div class="label">剩余空包弹：</div>
+                <div>{{grayNum - shootedGray}}</div>
+            </div>
+        </div>
+        
+        <!-- 发射控制 -->
+        <div class="flex" style="align-items: flex-start;">
+            <div class="label">发射子弹：</div>
+            <div class="red shotbtn" @click="shooting('red')" :disabled="shootedRed >= redNum" style="padding: 8px 12px; margin-right: 10px;">
+                实弹
+            </div>
+            <div class="gray shotbtn" @click="shooting('gray')" :disabled="shootedGray >= grayNum" style="padding: 8px 12px;">
+                空包弹
+            </div>
+        </div>
+        
+        <!-- 逆转器发射 -->
+        <div class="flex" style="margin-top: 10px; align-items: flex-start;">
+            <div class="label">逆转器发射：</div>
+            <div class="red shotbtn" @click="reverseShooting('red')" :disabled="shootedGray >= grayNum" style="padding: 8px 12px; margin-right: 10px;">
+                实弹
+            </div>
+            <div class="gray shotbtn" @click="reverseShooting('gray')" :disabled="shootedRed >= redNum" style="padding: 8px 12px;">
+                空包弹
+            </div>
+        </div>
+        
+        <!-- 推测弹夹 -->
+        <div>
+            <h3>推测弹夹</h3>
+            <div class="flex-wrap">
+                <div class="bullet" :class="{active: i === 0}" v-for="(bullet, i) in showBullets">
+                    <div>第{{i+1}}发</div>
+                    <div :class="bullet.type">
+                        <select v-model="bullet.type">
+                            <option value="">未知</option>
+                            <option value="red">实弹</option>
+                            <option value="gray">空包弹</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 发射历史 -->
+        <div class="shot-history">
+            <h3>发射历史</h3>
+            <div v-if="shotHistory.length === 0">
+                暂无发射记录
+            </div>
+            <div v-else>
+                <div class="history-item" v-for="(item, index) in shotHistory">
+                    <div class="history-number">{{index+1}}</div>
+                    <div :class="item.type">{{item.type === 'red' ? '实弹' : '空包弹'}}</div>
+                    <div>（{{item.method === 'reverse' ? '逆转器' : '普通'}}发射，{{item.time}}）</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 消息提示 -->
+        <div class="flex" v-if="message">
+            <div style="color: red;">{{message}}</div>
+        </div>
+        
+        <!-- 页脚 -->
+        <div class="footer">
+            本页面由@kaveys制作
+            <div style="margin-top: 10px;">
+                <a href="https://github.com/kaveys/buckshot-assistance" target="_blank" style="color: #ff6b6b; text-decoration: none;">点击此处进入项目地址</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, watch, onMounted } = Vue
+        const vueParams = {
+            setup() {
+
+                
+                // 实弹数量
+                const redNum = ref(3)
+                // 空包弹数量
+                const grayNum = ref(3)
+
+                // 总子弹数量
+                const allNum = computed(() => {
+                    return redNum.value + grayNum.value
+                })
+
+                // 监听子弹数量变化，自动重置
+                watch([redNum, grayNum], () => {
+                    setBullets()
+                })
+
+                // 所有子弹对象集合
+                const bullets = ref([])
+
+                // 已发射的实弹数量
+                const shootedRed = ref(0)
+                // 已发射的空包弹数量
+                const shootedGray = ref(0)
+
+                // 已发射子弹总数
+                const shootedBulletNum = computed(() => {
+                    return shootedRed.value + shootedGray.value
+                })
+
+                // 显示的子弹（未发射的）
+                const showBullets = computed(() => {
+                    return bullets.value.filter((_, i) => {
+                        return i >= shootedBulletNum.value
+                    })
+                })
+
+                // 发射历史
+                const shotHistory = ref([])
+
+                // 消息提示
+                const message = ref("")
+
+                // 重置所有数据
+                const resetAll = () => {
+                    bullets.value = []
+                    shootedRed.value = 0
+                    shootedGray.value = 0
+                    shotHistory.value = []
+                    message.value = ""
+                }
+
+                // 设置子弹对象
+                const setBullets = () => {
+                    resetAll()
+                    for (let i = 0; i < allNum.value; i++) {
+                        bullets.value.push({
+                            type: ""
+                        })
+                    }
+                }
+
+                // 获取当前时间
+                const getCurrentTime = () => {
+                    const now = new Date()
+                    return now.toLocaleTimeString()
+                }
+
+                // 射击函数
+                const shooting = (type) => {
+                    if (allNum.value === 0) {
+                        message.value = "此轮结束，请重新设置子弹"
+                        return
+                    }
+                    
+                    if (shootedBulletNum.value >= allNum.value) {
+                        message.value = "所有子弹已发射完毕"
+                        return
+                    }
+                    
+                    if (type === "red" && shootedRed.value < redNum.value) {
+                        shootedRed.value += 1
+                        bullets.value[shootedBulletNum.value - 1].type = "red"
+                        shotHistory.value.push({ type: "red", time: getCurrentTime(), method: "normal" })
+                        message.value = ""
+                    } else if (type === "gray" && shootedGray.value < grayNum.value) {
+                        shootedGray.value += 1
+                        bullets.value[shootedBulletNum.value - 1].type = "gray"
+                        shotHistory.value.push({ type: "gray", time: getCurrentTime(), method: "normal" })
+                        message.value = ""
+                    } else {
+                        message.value = "该类型子弹已全部发射"
+                    }
+                }
+
+                // 逆转器发射函数
+                const reverseShooting = (type) => {
+                    if (allNum.value === 0) {
+                        message.value = "此轮结束，请重新设置子弹"
+                        return
+                    }
+                    
+                    if (shootedBulletNum.value >= allNum.value) {
+                        message.value = "所有子弹已发射完毕"
+                        return
+                    }
+                    
+                    // 逆转器发射实弹等于发射空包弹
+                    if (type === "red" && shootedGray.value < grayNum.value) {
+                        shootedGray.value += 1
+                        bullets.value[shootedBulletNum.value - 1].type = "gray"
+                        shotHistory.value.push({ type: "gray", time: getCurrentTime(), method: "reverse" })
+                        message.value = ""
+                    } 
+                    // 逆转器发射空包弹等于发射实弹
+                    else if (type === "gray" && shootedRed.value < redNum.value) {
+                        shootedRed.value += 1
+                        bullets.value[shootedBulletNum.value - 1].type = "red"
+                        shotHistory.value.push({ type: "red", time: getCurrentTime(), method: "reverse" })
+                        message.value = ""
+                    } else {
+                        message.value = "该类型子弹已全部发射"
+                    }
+                }
+
+                // 初始化
+                onMounted(() => {
+                    setBullets()
+                })
+
+                return {
+                    redNum,
+                    grayNum,
+                    allNum,
+                    shootedRed,
+                    shootedGray,
+                    shootedBulletNum,
+                    showBullets,
+                    shotHistory,
+                    message,
+                    setBullets,
+                    shooting,
+                    reverseShooting
+                }
+            }
+        }
+
+        const myapp = createApp(vueParams)
+        myapp.mount("#app")
+    </script>
+</body>
+
+</html>
