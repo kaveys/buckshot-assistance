@@ -195,6 +195,13 @@
         .footer a:hover {
             text-decoration: underline;
         }
+        @keyframes blink {
+            0%, 100% { opacity: 1; text-shadow: 0 0 10px currentColor; }
+            50% { opacity: 0.7; text-shadow: 0 0 20px currentColor, 0 0 30px currentColor; }
+        }
+        .prob-high {
+            animation: blink 0.8s ease-in-out infinite;
+        }
     </style>
 </head>
 
@@ -248,14 +255,23 @@
             </div>
         </div>
         
-        <!-- 逆转器发射 -->
+        <!-- 转换器发射 -->
         <div class="flex" style="margin-top: 10px; align-items: flex-start;">
-            <div class="label">逆转器发射：</div>
+            <div class="label">转换器发射：</div>
             <div class="red shotbtn" @click="reverseShooting('red')" :disabled="shootedGray >= grayNum" style="padding: 8px 12px; margin-right: 10px;">
                 实弹
             </div>
             <div class="gray shotbtn" @click="reverseShooting('gray')" :disabled="shootedRed >= redNum" style="padding: 8px 12px;">
                 空包弹
+            </div>
+        </div>
+        
+        <!-- 概率显示 -->
+        <div class="stats">
+            <h3>子弹概率</h3>
+            <div class="flex" style="font-size: 24px; font-weight: bold; justify-content: center; gap: 50px;">
+                <div :class="['red', { 'prob-high': redProbability > grayProbability }]">实弹: {{redProbability}}%</div>
+                <div :class="['gray', { 'prob-high': grayProbability > redProbability }]">空包弹: {{grayProbability}}%</div>
             </div>
         </div>
         
@@ -286,7 +302,7 @@
                 <div class="history-item" v-for="(item, index) in shotHistory">
                     <div class="history-number">{{index+1}}</div>
                     <div :class="item.type">{{item.type === 'red' ? '实弹' : '空包弹'}}</div>
-                    <div>（{{item.method === 'reverse' ? '逆转器' : '普通'}}发射，{{item.time}}）</div>
+                    <div>（{{item.method === 'reverse' ? '转换器' : '普通'}}发射，{{item.time}}）</div>
                 </div>
             </div>
         </div>
@@ -344,6 +360,40 @@
                     return bullets.value.filter((_, i) => {
                         return i >= shootedBulletNum.value
                     })
+                })
+
+                // 计算实弹概率
+                const redProbability = computed(() => {
+                    // 剩余实弹和空包弹数量
+                    const remainingRed = redNum.value - shootedRed.value
+                    const remainingGray = grayNum.value - shootedGray.value
+                    
+                    // 总剩余子弹数量
+                    const totalRemaining = remainingRed + remainingGray
+                    
+                    // 如果没有剩余子弹
+                    if (totalRemaining === 0) return 0
+                    
+                    // 获取剩余子弹的第一发
+                    const firstBullet = showBullets.value[0]
+                    
+                    // 如果第一发已经标记为实弹，则概率为100%
+                    if (firstBullet && firstBullet.type === 'red') {
+                        return 100
+                    }
+                    
+                    // 如果第一发已经标记为空包弹，则概率为0%
+                    if (firstBullet && firstBullet.type === 'gray') {
+                        return 0
+                    }
+                    
+                    // 第一发未知，按照剩余弹夹中实弹和空包弹的比例计算
+                    return Math.round((remainingRed / totalRemaining) * 100)
+                })
+
+                // 计算空包弹概率
+                const grayProbability = computed(() => {
+                    return 100 - redProbability.value
                 })
 
                 // 发射历史
@@ -449,6 +499,8 @@
                     showBullets,
                     shotHistory,
                     message,
+                    redProbability,
+                    grayProbability,
                     setBullets,
                     shooting,
                     reverseShooting
