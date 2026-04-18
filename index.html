@@ -374,21 +374,38 @@
                     // 如果没有剩余子弹
                     if (totalRemaining === 0) return 0
                     
-                    // 获取剩余子弹的第一发
-                    const firstBullet = showBullets.value[0]
+                    // 统计推测弹夹中已标记的实弹和空包弹数量
+                    let markedRed = 0
+                    let markedGray = 0
+                    
+                    showBullets.value.forEach(bullet => {
+                        if (bullet.type === 'red') markedRed++
+                        if (bullet.type === 'gray') markedGray++
+                    })
+                    
+                    // 剩余未标记的实弹和空包弹数量
+                    const unmarkedRed = remainingRed - markedRed
+                    const unmarkedGray = remainingGray - markedGray
+                    
+                    // 未标记的子弹总数
+                    const unmarkedTotal = unmarkedRed + unmarkedGray
                     
                     // 如果第一发已经标记为实弹，则概率为100%
-                    if (firstBullet && firstBullet.type === 'red') {
+                    if (showBullets.value[0] && showBullets.value[0].type === 'red') {
                         return 100
                     }
                     
                     // 如果第一发已经标记为空包弹，则概率为0%
-                    if (firstBullet && firstBullet.type === 'gray') {
+                    if (showBullets.value[0] && showBullets.value[0].type === 'gray') {
                         return 0
                     }
                     
-                    // 第一发未知，按照剩余弹夹中实弹和空包弹的比例计算
-                    return Math.round((remainingRed / totalRemaining) * 100)
+                    // 第一发未标记，计算概率：未标记实弹 / 未标记子弹总数
+                    if (unmarkedTotal === 0) {
+                        return 0
+                    }
+                    
+                    return Math.round((unmarkedRed / unmarkedTotal) * 100)
                 })
 
                 // 计算空包弹概率
